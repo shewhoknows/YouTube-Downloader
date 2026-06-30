@@ -16,6 +16,7 @@ import {
   mapError,
   sanitizeFilename,
   tailStderr,
+  initCookies,
 } from './ytdlp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -283,6 +284,8 @@ if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get('*', (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
 }
+
+initCookies();
 
 app.listen(PORT, HOST, () => {
   console.log(`yt-downloader server listening on http://${HOST}:${PORT}`);

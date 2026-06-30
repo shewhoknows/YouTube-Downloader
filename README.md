@@ -85,6 +85,30 @@ anywhere — a VPS, Fly.io, Railway, Render, etc.
 | `YTDLP_PLAYER_CLIENT`      | _(unset)_   | yt-dlp player client(s), e.g. `tv,web_safari,android` |
 | `YTDLP_EXTRACTOR_ARGS`     | _(unset)_   | Full `--extractor-args` override (advanced)          |
 | `YTDLP_FORCE_IPV4`         | `0`         | Set to `1` to force IPv4 (can help with some blocks) |
+| `YTDLP_DEBUG`              | `0`         | Set to `1` for verbose yt-dlp output in the logs     |
+| `YTDLP_COOKIES_B64`        | _(unset)_   | base64 of a `cookies.txt` to log in as an account    |
+| `YTDLP_COOKIES`            | _(unset)_   | raw `cookies.txt` content (alternative to the above) |
+| `YTDLP_COOKIES_FILE`       | _(unset)_   | path to an existing `cookies.txt` (self-host/volume) |
+
+### Using a logged-in YouTube account (cookies)
+
+The most reliable way past a cloud-IP bot check is to authenticate as a real
+account. **Use a throwaway/secondary Google account** — YouTube can flag or ban
+accounts driven by yt-dlp from a server, and the cookies are full credentials
+to that account.
+
+1. Log into YouTube in your browser (ideally a private/incognito window).
+2. Export cookies for `youtube.com` in **Netscape format** using a browser
+   extension such as *Get cookies.txt LOCALLY*. Save the `cookies.txt`.
+3. Base64-encode it so it survives as a single env value:
+   - macOS/Linux: `base64 -w0 cookies.txt` (macOS: `base64 -i cookies.txt`)
+4. On your host, set the **secret variable** `YTDLP_COOKIES_B64` to that string
+   (Railway → Variables; Fly → `fly secrets set YTDLP_COOKIES_B64=…`).
+5. Redeploy. The logs should print `Cookie auth: ENABLED`.
+
+Keep cookies **out of git** — only ever set them as a secret variable. To stop
+using them, delete the variable and redeploy. Cookies expire eventually, so if
+downloads start failing again, re-export and update the variable.
 
 ### Hosted on a cloud IP and getting "bot check" / "sign-in" errors?
 
