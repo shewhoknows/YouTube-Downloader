@@ -97,7 +97,28 @@ fly deploy
 
 Your app goes live at `https://<app-name>.fly.dev`, reachable from any device.
 
-### Option B — Any server with Docker (self-host)
+### Option B — Railway
+
+Railway reads `railway.json` and builds the `Dockerfile` automatically.
+
+**Dashboard (no CLI):**
+1. Push this repo to GitHub (already done if you're reading this there).
+2. Railway → **New Project → Deploy from GitHub repo** → pick this repo/branch.
+3. In the service's **Variables**, add `APP_PASSWORD` (and optionally
+   `MAX_CONCURRENT_DOWNLOADS`). Railway sets `PORT` itself — the app honors it.
+4. **Settings → Networking → Generate Domain** to get your public HTTPS URL.
+
+**CLI:**
+```bash
+npm i -g @railway/cli
+railway login
+railway init                 # create/link a project
+railway up                   # build & deploy using the Dockerfile
+railway variables --set APP_PASSWORD=your-password
+railway domain               # generate a public URL
+```
+
+### Option C — Any server with Docker (self-host)
 
 ```bash
 docker compose up -d --build             # uncomment APP_PASSWORD in docker-compose.yml first
