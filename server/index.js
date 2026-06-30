@@ -15,6 +15,7 @@ import {
   parseProgressLine,
   mapError,
   sanitizeFilename,
+  tailStderr,
 } from './ytdlp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -180,6 +181,7 @@ app.post('/api/download', async (req, res) => {
   child.on('close', async (code) => {
     release();
     if (code !== 0) {
+      console.error(`[yt-dlp:download] exited ${code}:\n${tailStderr(job.stderr)}`);
       job.status = 'error';
       job.error = mapError(job.stderr);
       emit(job);
