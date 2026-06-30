@@ -67,6 +67,59 @@ npm start          # Express serves the API and the built client on :5176
 
 Then open http://localhost:5176.
 
+## Deploy (access it from anywhere)
+
+The app ships as a single Docker image that bundles Node, `yt-dlp`, and
+`ffmpeg`, and serves the API + built frontend on one port. That image runs
+anywhere — a VPS, Fly.io, Railway, Render, etc.
+
+### Configuration
+
+| Variable                   | Default     | Purpose                                              |
+| -------------------------- | ----------- | ---------------------------------------------------- |
+| `PORT`                     | `5176`      | Port the server listens on                           |
+| `HOST`                     | `0.0.0.0`   | Bind address                                         |
+| `APP_PASSWORD`             | _(unset)_   | If set, the whole app requires this password (Basic auth) |
+| `MAX_CONCURRENT_DOWNLOADS` | `2`         | Max simultaneous yt-dlp jobs                         |
+| `YTDLP_PATH`               | `yt-dlp`    | Path to the yt-dlp binary                            |
+
+> **Set `APP_PASSWORD` on any public deployment.** The app shells out to
+> `yt-dlp`, so you don't want it open to the world. Any username works; the
+> password must match.
+
+### Option A — Fly.io (fastest public URL)
+
+```bash
+fly launch --copy-config --no-deploy     # creates the app (pick a name + region)
+fly secrets set APP_PASSWORD=your-password
+fly deploy
+```
+
+Your app goes live at `https://<app-name>.fly.dev`, reachable from any device.
+
+### Option B — Any server with Docker (self-host)
+
+```bash
+docker compose up -d --build             # uncomment APP_PASSWORD in docker-compose.yml first
+# open http://<server-ip>:5176
+```
+
+Or without compose:
+
+```bash
+docker build -t youtube-downloader .
+docker run -d -p 5176:5176 -e APP_PASSWORD=your-password youtube-downloader
+```
+
+For HTTPS and a real domain, put it behind a reverse proxy (Caddy, Nginx, or
+your platform's built-in TLS). Render/Railway can deploy the same `Dockerfile`
+directly and give you an HTTPS URL automatically.
+
+### Keeping yt-dlp current
+
+YouTube changes often; rebuild the image periodically to pull the latest
+`yt-dlp` (the Dockerfile fetches the newest release on each build).
+
 ## How it works
 
 1. `POST /api/info` runs `yt-dlp --dump-json` and returns the video metadata.

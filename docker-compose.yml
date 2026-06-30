@@ -1,0 +1,12 @@
+# Self-host on any machine with Docker:  docker compose up -d --build
+# Then open http://<server-ip>:5176
+services:
+  app:
+    build: .
+    ports:
+      - "5176:5176"
+    environment:
+      # Uncomment and set to require a password (recommended for public hosts):
+      # APP_PASSWORD: "change-me"
+      MAX_CONCURRENT_DOWNLOADS: "2"
+    restart: unless-stopped

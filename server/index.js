@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { spawn } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import os from 'node:os';
@@ -19,11 +19,43 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 5176;
+const HOST = process.env.HOST || '0.0.0.0';
 const TMP_ROOT = path.join(os.tmpdir(), 'yt-downloader');
+// Optional gate for public deployments. When set, every request (except the
+// health check) requires HTTP Basic auth with this value as the password.
+const APP_PASSWORD = process.env.APP_PASSWORD || '';
+// Cap simultaneous yt-dlp jobs so a public instance can't be overwhelmed.
+const MAX_CONCURRENT = Math.max(1, parseInt(process.env.MAX_CONCURRENT_DOWNLOADS || '2', 10));
+let activeDownloads = 0;
 
 const app = express();
+app.set('trust proxy', true); // honor X-Forwarded-* behind a platform/reverse proxy
 app.use(cors());
 app.use(express.json());
+
+// Health check stays public so platform probes don't need credentials.
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Optional HTTP Basic auth. Works transparently with fetch, the SSE progress
+// stream, and the download navigation since the browser caches credentials.
+if (APP_PASSWORD) {
+  const expected = Buffer.from(APP_PASSWORD);
+  app.use((req, res, next) => {
+    const header = req.headers.authorization || '';
+    const [scheme, encoded] = header.split(' ');
+    if (scheme === 'Basic' && encoded) {
+      const provided = Buffer.from(
+        Buffer.from(encoded, 'base64').toString().split(':').slice(1).join(':')
+      );
+      if (provided.length === expected.length && timingSafeEqual(provided, expected)) {
+        return next();
+      }
+    }
+    res.set('WWW-Authenticate', 'Basic realm="YouTube Downloader"');
+    return res.status(401).send('Authentication required.');
+  });
+  console.log('Password protection is ENABLED.');
+}
 
 // ---------------------------------------------------------------------------
 // In-memory job registry. Each download is a job that produces one temp file.
@@ -78,6 +110,9 @@ app.post('/api/download', async (req, res) => {
   if (!['mp4', 'mp3'].includes(format)) {
     return res.status(400).json({ error: 'Invalid format requested.' });
   }
+  if (activeDownloads >= MAX_CONCURRENT) {
+    return res.status(429).json({ error: 'The server is busy right now. Please try again in a moment.' });
+  }
 
   const jobId = randomUUID();
   const dir = path.join(TMP_ROOT, jobId);
@@ -103,6 +138,15 @@ app.post('/api/download', async (req, res) => {
   };
   jobs.set(jobId, job);
 
+  activeDownloads += 1;
+  let released = false;
+  const release = () => {
+    if (!released) {
+      released = true;
+      activeDownloads = Math.max(0, activeDownloads - 1);
+    }
+  };
+
   const child = spawn(YTDLP, args);
   job.child = child;
 
@@ -126,6 +170,7 @@ app.post('/api/download', async (req, res) => {
   child.stderr.on('data', (d) => (job.stderr += d.toString()));
 
   child.on('error', (err) => {
+    release();
     job.status = 'error';
     job.error = `Failed to start yt-dlp: ${err.message}`;
     emit(job);
@@ -133,6 +178,7 @@ app.post('/api/download', async (req, res) => {
   });
 
   child.on('close', async (code) => {
+    release();
     if (code !== 0) {
       job.status = 'error';
       job.error = mapError(job.stderr);
@@ -227,10 +273,8 @@ app.get('/api/file/:jobId', (req, res) => {
   });
 });
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
-
 // ---------------------------------------------------------------------------
-// Serve the built client in production (optional).
+// Serve the built client in production (single-port deployment).
 // ---------------------------------------------------------------------------
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 if (fs.existsSync(clientDist)) {
@@ -238,6 +282,6 @@ if (fs.existsSync(clientDist)) {
   app.get('*', (_req, res) => res.sendFile(path.join(clientDist, 'index.html')));
 }
 
-app.listen(PORT, () => {
-  console.log(`yt-downloader server listening on http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`yt-downloader server listening on http://${HOST}:${PORT}`);
 });
