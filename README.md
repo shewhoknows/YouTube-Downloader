@@ -82,6 +82,19 @@ anywhere — a VPS, Fly.io, Railway, Render, etc.
 | `APP_PASSWORD`             | _(unset)_   | If set, the whole app requires this password (Basic auth) |
 | `MAX_CONCURRENT_DOWNLOADS` | `2`         | Max simultaneous yt-dlp jobs                         |
 | `YTDLP_PATH`               | `yt-dlp`    | Path to the yt-dlp binary                            |
+| `YTDLP_PLAYER_CLIENT`      | _(unset)_   | yt-dlp player client(s), e.g. `tv,web_safari,android` |
+| `YTDLP_EXTRACTOR_ARGS`     | _(unset)_   | Full `--extractor-args` override (advanced)          |
+| `YTDLP_FORCE_IPV4`         | `0`         | Set to `1` to force IPv4 (can help with some blocks) |
+
+### Hosted on a cloud IP and getting "bot check" / "sign-in" errors?
+
+This is YouTube blocking the **server's datacenter IP** (Railway, Fly, AWS…),
+not a problem with the app — the same video usually works from a home network.
+The app defaults to player clients that often avoid the check; if YouTube
+tightens up, try a different client without redeploying by setting
+`YTDLP_PLAYER_CLIENT` (e.g. `tv,web_safari` or `android`) as a variable on your
+host. If nothing sticks, the reliable fixes are running from a residential IP
+or supplying account cookies (not enabled here by design).
 
 > **Set `APP_PASSWORD` on any public deployment.** The app shells out to
 > `yt-dlp`, so you don't want it open to the world. Any username works; the
