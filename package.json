@@ -1,0 +1,17 @@
+{
+  "name": "youtube-downloader",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Simple web app to download YouTube videos as MP4/MP3 using yt-dlp.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:server": "npm --workspace server run dev",
+    "dev:client": "npm --workspace client run dev",
+    "build": "npm --workspace client run build",
+    "start": "npm --workspace server run start"
+  }
+}

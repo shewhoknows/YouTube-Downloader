@@ -1,0 +1,33 @@
+:root {
+  --bg: #0f1115;
+  --bg-accent: #161922;
+  --card: #1b1f2a;
+  --card-border: #2a2f3c;
+  --text: #e8eaf0;
+  --text-dim: #9aa1b1;
+  --accent: #ff3b30;
+  --accent-hover: #e0322a;
+  --field: #242838;
+  --field-border: #343a4d;
+  --error-bg: #2a1416;
+  --error-border: #5b2226;
+  --error-text: #ff8a84;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -10%, var(--bg-accent), var(--bg));
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
