@@ -36,4 +36,5 @@ primary_region = "iad"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "512mb"
+  # Runs the web app + the bundled PO-token provider, so give it ~1 GB.
+  memory = "1024mb"

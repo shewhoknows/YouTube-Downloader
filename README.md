@@ -90,11 +90,19 @@ anywhere — a VPS, Fly.io, Railway, Render, etc.
 
 This is YouTube blocking the **server's datacenter IP** (Railway, Fly, AWS…),
 not a problem with the app — the same video usually works from a home network.
-The app defaults to player clients that often avoid the check; if YouTube
-tightens up, try a different client without redeploying by setting
-`YTDLP_PLAYER_CLIENT` (e.g. `tv,web_safari` or `android`) as a variable on your
-host. If nothing sticks, the reliable fixes are running from a residential IP
-or supplying account cookies (not enabled here by design).
+
+To clear it without any login, the Docker image **bundles a PO-token
+(proof-of-origin) provider** ([bgutil-ytdlp-pot-provider](https://github.com/Brainicism/bgutil-ytdlp-pot-provider)).
+It runs alongside the app on `127.0.0.1:4416`, solves YouTube's BotGuard
+challenge, and yt-dlp uses the token automatically — no account or cookies.
+This works only with the Docker image (Fly/Railway/compose), not the bare
+`npm start`, which assumes a normal IP.
+
+Because of the extra process, give the container a bit more memory
+(**~1 GB**). If YouTube still blocks a specific video you can try a different
+player client via the `YTDLP_PLAYER_CLIENT` variable (e.g. `android`), but with
+the token provider running the defaults usually work. The last-resort options
+remain running from a residential IP or supplying account cookies.
 
 > **Set `APP_PASSWORD` on any public deployment.** The app shells out to
 > `yt-dlp`, so you don't want it open to the world. Any username works; the
